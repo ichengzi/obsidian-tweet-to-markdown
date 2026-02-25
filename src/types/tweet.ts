@@ -21,6 +21,12 @@ export interface Data {
   conversation_id?: string
   attachments?: Attachment
   referenced_tweets?: ReferencedTweet[]
+  note_tweet?: NoteTweet
+}
+
+export interface NoteTweet {
+  text: string
+  entities?: Entities
 }
 
 export interface Entities {

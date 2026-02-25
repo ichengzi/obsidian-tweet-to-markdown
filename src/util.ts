@@ -67,7 +67,7 @@ const getTweetFromTwitter = async (
     expansions: 'author_id,attachments.poll_ids,attachments.media_keys',
     'user.fields': 'name,username,profile_image_url',
     'tweet.fields':
-      'attachments,public_metrics,entities,conversation_id,referenced_tweets,created_at',
+      'attachments,public_metrics,entities,conversation_id,referenced_tweets,created_at,note_tweet',
     'media.fields': 'url,alt_text',
     'poll.fields': 'options',
   })
@@ -227,7 +227,10 @@ export const createFilename = (
     tweet.includes.users[0].username
   )
   filename = filename.replace(/\[\[id\]\]/gi, tweet.data.id)
-  filename = filename.replace(/\[\[text\]\]/gi, tweet.data.text)
+  filename = filename.replace(
+    /\[\[text\]\]/gi,
+    tweet.data.note_tweet?.text ?? tweet.data.text
+  )
   // date
   const dateRegex = /\[\[(date[:\w-]*)\]\]/
   if (dateRegex.test(filename)) {
@@ -252,7 +255,8 @@ export const formatTimestamp = (
   timestamp: string,
   timestampFormat: TimestampFormat
 ): string =>
-  moment(timestamp)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (moment as any)(timestamp)
     .locale(timestampFormat.locale)
     .format(timestampFormat.format)
 
@@ -400,13 +404,14 @@ export const buildMarkdown = async (
     throw new Error('A thread tweet must have a previous author')
   }
 
-  let text = tweet.data.text
+  let text = tweet.data.note_tweet?.text ?? tweet.data.text
+  const entities = tweet.data.note_tweet?.entities ?? tweet.data.entities
 
   /**
    * replace entities with markdown links
    */
-  if (tweet.data?.entities && plugin.settings.includeLinks) {
-    text = replaceEntities(plugin.settings, tweet.data.entities, text)
+  if (entities && plugin.settings.includeLinks) {
+    text = replaceEntities(plugin.settings, entities, text)
   }
 
   text = decode(text)
@@ -548,7 +553,7 @@ export const buildMarkdown = async (
 
   // check for quoted tweets to be included
   if (tweet.data?.referenced_tweets) {
-    for (const subtweet_ref of tweet.data?.referenced_tweets) {
+    for (const subtweet_ref of tweet.data.referenced_tweets) {
       if (subtweet_ref?.type === 'quoted') {
         const subtweet = await getTweet(subtweet_ref.id, plugin.bearerToken)
         let subtweet_text

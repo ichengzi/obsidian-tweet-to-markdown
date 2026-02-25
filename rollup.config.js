@@ -21,5 +21,11 @@ export default {
     banner,
   },
   external: ['obsidian'],
-  plugins: [typescript(), nodeResolve({browser: true}), commonjs()],
+  plugins: [
+    typescript({
+      tsconfig: './tsconfig.build.json',
+    }),
+    nodeResolve({browser: true}),
+    commonjs()
+  ],
 }
